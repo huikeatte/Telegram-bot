@@ -1,0 +1,67 @@
+{
+  "name": "Telegram Bot Messages (GitHub poller)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-poller",
+        "options": {}
+      },
+      "id": "c1d2e3f4-0001-4c00-9000-000000000001",
+      "name": "Poller Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-3792, 1792],
+      "webhookId": "c1d2e3f4-0001-4c00-9000-0000000000cc",
+      "notesInFlow": true,
+      "notes": "Receives batches from the GitHub Actions poller"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Change this to match the N8N_WEBHOOK_SECRET GitHub secret\nconst SECRET = 'CHANGE_ME_LONG_RANDOM_STRING';\n\nconst out = [];\nfor (const item of $input.all()) {\n  const headers = item.json.headers || {};\n  if (headers['x-webhook-secret'] !== SECRET) continue; // drop unauthenticated calls\n\n  // One item per message, same shape as Telegram Trigger output\n  for (const m of item.json.body?.messages || []) {\n    out.push({ json: { update_id: null, source: 'github-poller', message: m } });\n  }\n}\nreturn out;"
+      },
+      "id": "c1d2e3f4-0002-4c00-9000-000000000002",
+      "name": "Verify & Split",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3552, 1792]
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsRepeatedInPastExecutions",
+        "dedupeValue": "={{ $json.message.chat.id }}_{{ $json.message.message_id }}",
+        "options": { "historySize": 10000 }
+      },
+      "id": "c1d2e3f4-0003-4c00-9000-000000000003",
+      "name": "Skip Already Seen",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [-3312, 1792],
+      "notesInFlow": true,
+      "notes": "Poller runs overlap on purpose - this keeps each message once"
+    },
+    {
+      "parameters": {},
+      "id": "c1d2e3f4-0004-4c00-9000-000000000004",
+      "name": "Your processing here",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-3072, 1792],
+      "notesInFlow": true,
+      "notes": "Use $json.message.text, $json.message.from.username, $json.message.chat.id"
+    }
+  ],
+  "connections": {
+    "Poller Webhook": {
+      "main": [[{ "node": "Verify & Split", "type": "main", "index": 0 }]]
+    },
+    "Verify & Split": {
+      "main": [[{ "node": "Skip Already Seen", "type": "main", "index": 0 }]]
+    },
+    "Skip Already Seen": {
+      "main": [[{ "node": "Your processing here", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" }
+}

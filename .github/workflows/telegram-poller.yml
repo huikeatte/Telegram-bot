@@ -1,0 +1,36 @@
+name: Telegram poller
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 min (GitHub minimum; actual runs are often later)
+  workflow_dispatch:         # "Run workflow" button for manual tests
+
+concurrency:
+  group: telegram-poller
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Poll Telegram and forward to n8n
+        run: python poller.py
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_SESSION_STRING: ${{ secrets.TG_SESSION_STRING }}
+          TG_CHAT_IDS: ${{ secrets.TG_CHAT_IDS }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+          N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+          LOOKBACK_MINUTES: ${{ vars.LOOKBACK_MINUTES }}
+          ONLY_BOTS: ${{ vars.ONLY_BOTS }}
