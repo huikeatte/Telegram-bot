@@ -29,12 +29,13 @@ from telethon import TelegramClient, utils
 from telethon.sessions import StringSession
 from telethon.tl.types import User, Channel, Chat
 
-API_ID = int(os.environ["TG_API_ID"])
-API_HASH = os.environ["TG_API_HASH"]
-SESSION_STRING = os.environ["TG_SESSION_STRING"]
+# .strip(): pasted secrets often carry a trailing newline or space
+API_ID = int(os.environ["TG_API_ID"].strip())
+API_HASH = os.environ["TG_API_HASH"].strip()
+SESSION_STRING = os.environ["TG_SESSION_STRING"].strip()
 CHAT_IDS = [int(x) for x in os.environ["TG_CHAT_IDS"].split(",") if x.strip()]
-WEBHOOK_URL = os.environ["N8N_WEBHOOK_URL"]
-WEBHOOK_SECRET = os.environ.get("N8N_WEBHOOK_SECRET", "")
+WEBHOOK_URL = os.environ["N8N_WEBHOOK_URL"].strip()
+WEBHOOK_SECRET = os.environ.get("N8N_WEBHOOK_SECRET", "").strip()
 LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES") or 60)
 ONLY_BOTS = (os.environ.get("ONLY_BOTS") or "true").lower() == "true"
 
