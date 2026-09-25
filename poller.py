@@ -70,11 +70,13 @@ async def collect(client):
 
     for chat_id in CHAT_IDS:
         chat = await client.get_entity(chat_id)
+        checked = 0
         async for msg in client.iter_messages(chat, limit=500):  # newest first
             if msg.date < cutoff:
                 break
             if getattr(msg, "action", None):  # service messages: joins, pins, title changes...
                 continue
+            checked += 1
             sender = sender_dict(await msg.get_sender())
             if ONLY_BOTS and not (sender and sender["is_bot"]):
                 continue
@@ -87,6 +89,9 @@ async def collect(client):
                 "has_media": msg.media is not None,
                 "reply_to_message_id": msg.reply_to_msg_id,
             })
+        # Counts only - logs of public repos are public
+        print(f"Chat {chat_id}: {checked} message(s) in the last {LOOKBACK_MINUTES} min, "
+              f"{sum(1 for m in messages if m['chat']['id'] == utils.get_peer_id(chat))} to forward.")
 
     messages.sort(key=lambda m: (m["date"], m["message_id"]))  # oldest first
     return messages
