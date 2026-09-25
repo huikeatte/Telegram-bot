@@ -103,11 +103,21 @@ def post(messages):
     req = urllib.request.Request(
         WEBHOOK_URL,
         data=body,
-        headers={"Content-Type": "application/json", "x-webhook-secret": WEBHOOK_SECRET},
+        headers={
+            "Content-Type": "application/json",
+            "x-webhook-secret": WEBHOOK_SECRET,
+            # n8n Cloud's firewall rejects the default "Python-urllib" agent with 403
+            "User-Agent": "telegram-poller/1.0 (+github-actions)",
+        },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:  # non-2xx raises -> job fails
-        print(f"Forwarded {len(messages)} message(s) -> n8n HTTP {resp.status}")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            print(f"Forwarded {len(messages)} message(s) -> n8n HTTP {resp.status}")
+    except urllib.error.HTTPError as e:
+        # Server's reply only (e.g. firewall page or n8n error) - never message content
+        detail = e.read(300).decode("utf-8", "replace").replace("\n", " ")
+        sys.exit(f"n8n refused the delivery: HTTP {e.code} - {detail}")
 
 
 async def main():
