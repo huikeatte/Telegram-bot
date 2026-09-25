@@ -110,6 +110,8 @@ async def main():
     try:
         if not await client.is_user_authorized():
             sys.exit("TG_SESSION_STRING is invalid or was revoked - run generate_session.py again.")
+        if await client.is_bot():
+            sys.exit("TG_SESSION_STRING is a BOT login - run generate_session.py again with a phone number, not a bot token.")
         messages = await collect(client)
     finally:
         await client.disconnect()
